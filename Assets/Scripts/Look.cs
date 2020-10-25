@@ -10,6 +10,7 @@ namespace Com.james168ma.FPSTutorial
 
         public Transform player;
         public Transform cams;
+        public Transform weapon;
 
         public float xSensitivity;
         public float ySensitivity;
@@ -41,6 +42,8 @@ namespace Com.james168ma.FPSTutorial
             {
                 cams.localRotation = t_delta;
             }
+
+            weapon.rotation = cams.rotation;
         }
 
         void SetX() // rotating up and down, which will affect the cameras
