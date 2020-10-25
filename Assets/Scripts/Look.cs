@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Com.james168ma.FPSTutorial
+namespace Com.james168ma.Simpleton
 {
     public class Look : MonoBehaviour
     {
+        #region Variables
+
         public static bool cursorLocked = true;
 
         public Transform player;
@@ -18,19 +20,25 @@ namespace Com.james168ma.FPSTutorial
 
         private Quaternion camCenter;
 
-        // Start is called before the first frame update
+        #endregion
+
+        #region Monobehaviour Callbacks
+
         void Start()
         {
             camCenter = cams.localRotation; // rotation origin for cameras to camCenter
         }
 
-        // Update is called once per frame
         void Update()
         {
             SetY();
             SetX();
             UpdateCursorLock();
         }
+
+        #endregion
+
+        #region Private Methods
 
         void SetY() // rotating up and down, which will affect the cameras
         {
@@ -77,6 +85,7 @@ namespace Com.james168ma.FPSTutorial
                 }       
             }
         }
-        
+
+        #endregion
     }
 }

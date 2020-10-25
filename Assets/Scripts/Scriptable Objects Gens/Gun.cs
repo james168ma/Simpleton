@@ -2,14 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Com.james168ma.FPSTutorial
+namespace Com.james168ma.Simpleton
 {
     [CreateAssetMenu(fileName = "New Gun", menuName = "Gun")]
 
     public class Gun : ScriptableObject
     {
-        public string name;
+        new public string name;
         public float firerate;
+        public float bloom;
+        public float recoil;
+        public float kickback;
+        public float aimSpeed;
         public GameObject prefab;
     }
 }
