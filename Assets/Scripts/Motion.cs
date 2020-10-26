@@ -32,6 +32,8 @@ namespace Com.james168ma.Simpleton
 
         private int currentHealth;
 
+        private Manager manager;
+
         #endregion
 
 
@@ -39,6 +41,7 @@ namespace Com.james168ma.Simpleton
         
         private void Start()
         {
+            manager = GameObject.Find("Manager").GetComponent<Manager>();
             currentHealth = maxHealth;
 
             // if it is your camera, enable it for you
@@ -76,6 +79,11 @@ namespace Com.james168ma.Simpleton
             if(isJumping) 
             {
                 rig.AddForce(Vector3.up * jumpForce);
+            }
+
+            if(Input.GetKeyDown(KeyCode.U)) // just for testing purposes
+            {
+                TakeDamage(500);
             }
 
             // Headbob
@@ -158,7 +166,8 @@ namespace Com.james168ma.Simpleton
 
                 if(currentHealth <= 0)
                 {
-                    Debug.Log("YOU DIED");
+                    manager.Spawn();
+                    PhotonNetwork.Destroy(gameObject);
                 }
             }
         }
