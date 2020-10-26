@@ -13,6 +13,7 @@ namespace Com.james168ma.Simpleton
         public float sprintModifier;
         public float jumpForce;
         public Camera normalCam;
+        public GameObject cameraParent;
         public Transform weaponParent;
         public Transform groundDetector;
         public LayerMask ground;
@@ -34,9 +35,17 @@ namespace Com.james168ma.Simpleton
         
         private void Start()
         {
+            // if it is your camera, enable it for you
+            cameraParent.SetActive(photonView.IsMine);
+
+            if(!photonView.IsMine) // if its not your player then make them a regular player
+            {
+                gameObject.layer = 11;
+            }
+
             baseFOV = normalCam.fieldOfView;
-            Camera.main.enabled = false;
-            rig = GetComponent<Rigidbody>();
+            if(Camera.main) Camera.main.enabled = false;
+            rig = gameObject.GetComponent<Rigidbody>();
             weaponParentOrigin = weaponParent.localPosition;
         }
 

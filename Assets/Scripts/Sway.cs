@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 namespace Com.james168ma.Simpleton
 {
-    public class Sway : MonoBehaviour
+    public class Sway : MonoBehaviourPunCallbacks
     {
         #region Variables
 
@@ -14,9 +15,7 @@ namespace Com.james168ma.Simpleton
         private Quaternion origin_rotation;
 
         #endregion
-
-
-
+        
 
         #region MonoBehaviour Callbacks
 
@@ -31,9 +30,6 @@ namespace Com.james168ma.Simpleton
         }
 
         #endregion
-
-
-
 
 
         #region Private Methods

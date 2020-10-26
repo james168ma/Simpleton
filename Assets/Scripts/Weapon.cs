@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 namespace Com.james168ma.Simpleton
 {
-    public class Weapon : MonoBehaviour
+    public class Weapon : MonoBehaviourPunCallbacks
     {
         #region Variables
 
@@ -23,9 +24,11 @@ namespace Com.james168ma.Simpleton
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.Alpha1)) // press 1 to equip
+            if(!photonView.IsMine) return;
+
+            if(Input.GetKeyDown(KeyCode.Alpha1)) // press 1 to equip weapon 0
             {
-                Equip(0);
+                photonView.RPC("Equip", RpcTarget.All, 0); // send to all computers on the server that you equipped
             }
 
             if(currentWeapon != null)
@@ -34,7 +37,7 @@ namespace Com.james168ma.Simpleton
 
                 if(Input.GetMouseButtonDown(0) && currentCooldown <= 0) // left clicked
                 {
-                    Shoot();
+                    photonView.RPC("Shoot", RpcTarget.All);
                 }
 
                 // weapon position elasticity
@@ -44,6 +47,8 @@ namespace Com.james168ma.Simpleton
 
         void FixedUpdate()
         {
+            if(!photonView.IsMine) return;
+
             // cooldown for shooting
             if(currentCooldown > 0) 
             {
@@ -55,6 +60,7 @@ namespace Com.james168ma.Simpleton
 
         #region Private Methods
 
+        [PunRPC] // make Equip an RPC (Remote Procedure Call)
         void Equip(int p_ind)
         {
             if(currentWeapon != null)
@@ -67,6 +73,7 @@ namespace Com.james168ma.Simpleton
             GameObject t_newWeapon = Instantiate(loadout[p_ind].prefab, weaponParent.position, weaponParent.rotation, weaponParent) as GameObject;
             t_newWeapon.transform.localPosition = Vector3.zero;
             t_newWeapon.transform.localEulerAngles = Vector3.zero;
+            t_newWeapon.GetComponent<Sway>().enabled = photonView.IsMine;
 
             currentWeapon = t_newWeapon;
         }
@@ -90,6 +97,7 @@ namespace Com.james168ma.Simpleton
 
         }
 
+        [PunRPC]
         void Shoot()
         {
             Transform t_spawn = transform.Find("Cameras/Normal Camera");
@@ -100,6 +108,9 @@ namespace Com.james168ma.Simpleton
             t_bloom += Random.Range(-loadout[currentIndex].bloom, loadout[currentIndex].bloom) * t_spawn.right;
             t_bloom -= t_spawn.position;
             t_bloom.Normalize();
+            
+            // cooldown
+            currentCooldown = loadout[currentIndex].firerate;
 
             // raycast
             RaycastHit t_hit = new RaycastHit();
@@ -108,14 +119,20 @@ namespace Com.james168ma.Simpleton
                 GameObject t_newHole = Instantiate(bulletholePrefab, t_hit.point + t_hit.normal * 0.001f, Quaternion.identity) as GameObject;
                 t_newHole.transform.LookAt(t_hit.point + t_hit.normal * 1f);
                 Destroy(t_newHole, 5f);
+
+                if(photonView.IsMine)
+                {
+                    // shooting other player on network
+                    if(t_hit.collider.gameObject.layer == 11)
+                    {
+                        // RPC Call to Damage Player Goes Here
+                    }
+                }
             }
 
             // gun fx
             currentWeapon.transform.Rotate(-loadout[currentIndex].recoil, 0, 0);
             currentWeapon.transform.position -= currentWeapon.transform.forward * loadout[currentIndex].kickback;
-
-            // cooldown
-            currentCooldown = loadout[currentIndex].firerate;
         }
 
         #endregion
