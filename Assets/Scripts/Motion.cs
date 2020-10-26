@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 namespace Com.james168ma.Simpleton
 {
-    public class Motion : MonoBehaviour
+    public class Motion : MonoBehaviourPunCallbacks
     {
         #region Variables
 
@@ -41,6 +42,8 @@ namespace Com.james168ma.Simpleton
 
         private void Update()
         {
+            if(!photonView.IsMine) return; // if it isn't your player then skip
+
             // Axis
             float t_hmove = Input.GetAxisRaw("Horizontal"); // WASD -> A=-1, D=1
             float t_vmove = Input.GetAxisRaw("Vertical");   // WASD -> W=1, S=-1
@@ -84,6 +87,8 @@ namespace Com.james168ma.Simpleton
         // FixedUpdate because it is useful for physics especially if it will be multiplayer game for sync issues
         void FixedUpdate()
         {   
+            if(!photonView.IsMine) return;
+            
             // t_ for temporary
             // Axis
             float t_hmove = Input.GetAxisRaw("Horizontal"); // WASD -> A=-1, D=1
