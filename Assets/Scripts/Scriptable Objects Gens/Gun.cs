@@ -9,6 +9,7 @@ namespace Com.james168ma.Simpleton
     public class Gun : ScriptableObject
     {
         new public string name;
+        public int damage;
         public float firerate;
         public float bloom;
         public float recoil;

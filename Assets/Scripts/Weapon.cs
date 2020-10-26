@@ -24,11 +24,17 @@ namespace Com.james168ma.Simpleton
 
         void Update()
         {
+            if(currentWeapon != null)
+            {
+                // weapon position elasticity
+                currentWeapon.transform.localPosition = Vector3.Lerp(currentWeapon.transform.localPosition, Vector3.zero, Time.deltaTime * 4f);
+            }
+
             if(!photonView.IsMine) return;
 
             if(Input.GetKeyDown(KeyCode.Alpha1)) // press 1 to equip weapon 0
             {
-                photonView.RPC("Equip", RpcTarget.All, 0); // send to all computers on the server that you equipped
+                photonView.RPC("Equip", RpcTarget.AllBuffered, 0); // send to all computers on the server that you equipped
             }
 
             if(currentWeapon != null)
@@ -39,9 +45,6 @@ namespace Com.james168ma.Simpleton
                 {
                     photonView.RPC("Shoot", RpcTarget.All);
                 }
-
-                // weapon position elasticity
-                currentWeapon.transform.localPosition = Vector3.Lerp(currentWeapon.transform.localPosition, Vector3.zero, Time.deltaTime * 4f);
             }
         }
 
@@ -73,7 +76,7 @@ namespace Com.james168ma.Simpleton
             GameObject t_newWeapon = Instantiate(loadout[p_ind].prefab, weaponParent.position, weaponParent.rotation, weaponParent) as GameObject;
             t_newWeapon.transform.localPosition = Vector3.zero;
             t_newWeapon.transform.localEulerAngles = Vector3.zero;
-            t_newWeapon.GetComponent<Sway>().enabled = photonView.IsMine;
+            t_newWeapon.GetComponent<Sway>().isMine = photonView.IsMine;
 
             currentWeapon = t_newWeapon;
         }
@@ -125,7 +128,8 @@ namespace Com.james168ma.Simpleton
                     // shooting other player on network
                     if(t_hit.collider.gameObject.layer == 11)
                     {
-                        // RPC Call to Damage Player Goes Here
+                        // RPC Call to Damage Player
+                        t_hit.collider.gameObject.GetPhotonView().RPC("TakeDamage", RpcTarget.All, loadout[currentIndex].damage);
                     }
                 }
             }
@@ -133,6 +137,12 @@ namespace Com.james168ma.Simpleton
             // gun fx
             currentWeapon.transform.Rotate(-loadout[currentIndex].recoil, 0, 0);
             currentWeapon.transform.position -= currentWeapon.transform.forward * loadout[currentIndex].kickback;
+        }
+
+        [PunRPC]
+        private void TakeDamage (int p_damage)
+        {
+            GetComponent<Motion>().TakeDamage(p_damage);
         }
 
         #endregion

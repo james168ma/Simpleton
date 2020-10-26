@@ -12,6 +12,7 @@ namespace Com.james168ma.Simpleton
         public float speed;
         public float sprintModifier;
         public float jumpForce;
+        public int maxHealth;
         public Camera normalCam;
         public GameObject cameraParent;
         public Transform weaponParent;
@@ -29,12 +30,17 @@ namespace Com.james168ma.Simpleton
         private float baseFOV;
         private float sprintFOVModifier = 1.5f;
 
+        private int currentHealth;
+
         #endregion
+
 
         #region Monobehavior Callbacks
         
         private void Start()
         {
+            currentHealth = maxHealth;
+
             // if it is your camera, enable it for you
             cameraParent.SetActive(photonView.IsMine);
 
@@ -45,7 +51,7 @@ namespace Com.james168ma.Simpleton
 
             baseFOV = normalCam.fieldOfView;
             if(Camera.main) Camera.main.enabled = false;
-            rig = gameObject.GetComponent<Rigidbody>();
+            rig = GetComponent<Rigidbody>();
             weaponParentOrigin = weaponParent.localPosition;
         }
 
@@ -139,6 +145,26 @@ namespace Com.james168ma.Simpleton
         }
 
         #endregion
+
+
+        #region Public Methods
+
+        public void TakeDamage(int p_damage)
+        {
+            if(photonView.IsMine) // only wanna take away damage on yours
+            {
+                currentHealth -= p_damage;
+                Debug.Log(currentHealth);
+
+                if(currentHealth <= 0)
+                {
+                    Debug.Log("YOU DIED");
+                }
+            }
+        }
+
+        #endregion
+
 
         #region Private Methods
 

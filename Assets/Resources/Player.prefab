@@ -198,6 +198,7 @@ MonoBehaviour:
   speed: 500
   sprintModifier: 2
   jumpForce: 1000
+  maxHealth: 1000
   normalCam: {fileID: 1932900979834509570}
   cameraParent: {fileID: 1932900980270629350}
   weaponParent: {fileID: 1932900979669618387}
