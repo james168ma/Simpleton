@@ -142,7 +142,7 @@ namespace Com.james168ma.Simpleton
         [PunRPC]
         private void TakeDamage (int p_damage)
         {
-            GetComponent<Motion>().TakeDamage(p_damage);
+            GetComponent<Player>().TakeDamage(p_damage);
         }
 
         #endregion
