@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Pistol
   damage: 100
+  ammo: 20
+  clipsize: 8
   firerate: 0.2
   bloom: 20
   recoil: 10
   kickback: 0.15
   aimSpeed: 7
+  reload: 1.5
   prefab: {fileID: 1244784521058594128, guid: 02355e13d53625642ad80723df8b10fe, type: 3}

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 using UnityEngine;
 using Photon.Pun;
 
@@ -12,6 +13,8 @@ namespace Com.james168ma.Simpleton
         public float speed;
         public float sprintModifier;
         public float jumpForce;
+        public float lengthOfSlide;
+        public float slideModifier;
         public int maxHealth;
         public Camera normalCam;
         public GameObject cameraParent;
@@ -20,21 +23,31 @@ namespace Com.james168ma.Simpleton
         public LayerMask ground;
 
         private Transform uiHealthbar;
+        private Text uiAmmo;
 
         private Rigidbody rig;
 
         private Vector3 targetWeaponBobPosition;
         private Vector3 weaponParentOrigin;
+        private Vector3 weaponParentCurrentPosition;
 
         private float movementCounter;
         private float idleCounter;
 
         private float baseFOV;
         private float sprintFOVModifier = 1.5f;
+        private Vector3 origin;
 
         private int currentHealth;
 
         private Manager manager;
+        private Weapon weapon;
+
+        private bool sliding;
+        private float slideTime;
+        private Vector3 slideDirection;
+
+        private GameObject eyes;
 
         #endregion
 
@@ -44,6 +57,8 @@ namespace Com.james168ma.Simpleton
         private void Start()
         {
             manager = GameObject.Find("Manager").GetComponent<Manager>();
+            weapon = GetComponent<Weapon>();
+            eyes = GameObject.Find("Design/Eyes");
             currentHealth = maxHealth;
 
             // if it is your camera, enable it for you
@@ -55,14 +70,20 @@ namespace Com.james168ma.Simpleton
             }
 
             baseFOV = normalCam.fieldOfView;
+            origin = normalCam.transform.localPosition;
+
             if(Camera.main) Camera.main.enabled = false;
+
             rig = GetComponent<Rigidbody>();
             weaponParentOrigin = weaponParent.localPosition;
+            weaponParentCurrentPosition = weaponParentOrigin;
 
             if(photonView.IsMine)
             {
                 uiHealthbar = GameObject.Find("HUD/Health/Bar").transform;
+                uiAmmo = GameObject.Find("HUD/Ammo/Text").GetComponent<Text>();
                 RefreshHealthBar();
+                eyes.SetActive(false); // disable your eyes so they don't get in the way
             }
         }
 
@@ -95,7 +116,8 @@ namespace Com.james168ma.Simpleton
             }
 
             // Headbob
-            if(t_hmove == 0 && t_vmove == 0) // idle
+            if (sliding) { }
+            else if(t_hmove == 0 && t_vmove == 0) // idle
             {
                 Headbob(idleCounter, 0.025f, 0.025f);
                 idleCounter += Time.deltaTime;
@@ -116,6 +138,7 @@ namespace Com.james168ma.Simpleton
 
             // UI Refresh
             RefreshHealthBar();
+            weapon.RefreshAmmo(uiAmmo);
         }
 
         // FixedUpdate because it is useful for physics especially if it will be multiplayer game for sync issues
@@ -132,34 +155,68 @@ namespace Com.james168ma.Simpleton
             // Controls
             bool sprint = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift); // left or right shift
             bool jump = Input.GetKeyDown(KeyCode.Space);
+            bool slide = Input.GetKey(KeyCode.C);
 
 
             // States
             bool isGrounded = Physics.Raycast(groundDetector.position, Vector3.down, 0.2f, ground); // if the ground is 0.2f below our unity character
             bool isJumping = jump && isGrounded;
             bool isSprinting = sprint && (t_vmove > 0) && !isJumping && isGrounded; // input on the vertical axis > 0 means moving forward (holding w)
+            bool isSliding = isSprinting && slide && !sliding;
 
 
             // Movement
-            Vector3 t_direction = new Vector3(t_hmove, 0, t_vmove);
-            t_direction.Normalize();
-
+            Vector3 t_direction = Vector3.zero;
             float t_adjustedSpeed = speed;
-            if(isSprinting) t_adjustedSpeed *= sprintModifier;
 
-            Vector3 t_targetVelocity = transform.TransformDirection(t_direction) * t_adjustedSpeed * Time.deltaTime; // Time.deltaTime is the time between each frame
+            if(!sliding)
+            {
+                t_direction = new Vector3(t_hmove, 0, t_vmove);
+                t_direction.Normalize();
+                t_direction = transform.TransformDirection(t_direction);
+
+                if(isSprinting) t_adjustedSpeed *= sprintModifier;
+            }
+            else
+            {
+                t_direction = slideDirection;
+                t_adjustedSpeed *= slideModifier;
+                slideTime -= Time.deltaTime;
+                if(slideTime <= 0) 
+                {
+                    sliding = false;
+                    weaponParentCurrentPosition += Vector3.up * 0.5f;
+                }
+            }
+
+            
+            Vector3 t_targetVelocity =  t_direction * t_adjustedSpeed * Time.deltaTime; // Time.deltaTime is the time between each frame
             t_targetVelocity.y = rig.velocity.y;
             rig.velocity = t_targetVelocity;
 
-
-            // Field of View
-            if(isSprinting) 
+            // Sliding
+            if(isSliding)
             {
-                normalCam.fieldOfView = Mathf.Lerp(normalCam.fieldOfView, baseFOV * sprintFOVModifier, Time.deltaTime * 8f);
+                sliding = true;
+                slideDirection = t_direction;
+                slideTime = lengthOfSlide;
+                // adjust camera
+                weaponParentCurrentPosition += Vector3.down * 0.5f;
+            }
+
+
+            // Camera Stuff
+            if(sliding)
+            {
+                normalCam.fieldOfView = Mathf.Lerp(normalCam.fieldOfView, baseFOV * sprintFOVModifier * 1.25f, Time.deltaTime * 8f);
+                normalCam.transform.localPosition = Vector3.Lerp(normalCam.transform.localPosition, origin + Vector3.down * 0.5f, Time.deltaTime * 6f);
             }
             else
-            { 
-                normalCam.fieldOfView = Mathf.Lerp(normalCam.fieldOfView, baseFOV, Time.deltaTime * 8f);
+            {
+                if(isSprinting) normalCam.fieldOfView = Mathf.Lerp(normalCam.fieldOfView, baseFOV * sprintFOVModifier, Time.deltaTime * 8f);
+                else normalCam.fieldOfView = Mathf.Lerp(normalCam.fieldOfView, baseFOV, Time.deltaTime * 8f);
+
+                normalCam.transform.localPosition = Vector3.Lerp(normalCam.transform.localPosition, origin, Time.deltaTime * 6f);
             }
         }
 
@@ -190,7 +247,7 @@ namespace Com.james168ma.Simpleton
 
         void Headbob(float p_z, float p_x_intensity, float p_y_intensity)
         {
-            targetWeaponBobPosition = weaponParentOrigin + new Vector3(Mathf.Cos(p_z) * p_x_intensity, Mathf.Sin(p_z * 2) * p_y_intensity, 0);
+            targetWeaponBobPosition = weaponParentCurrentPosition + new Vector3(Mathf.Cos(p_z) * p_x_intensity, Mathf.Sin(p_z * 2) * p_y_intensity, 0);
         }
 
         void RefreshHealthBar()

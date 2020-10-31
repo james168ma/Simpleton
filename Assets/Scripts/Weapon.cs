@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 using UnityEngine;
 using Photon.Pun;
 
@@ -18,9 +19,17 @@ namespace Com.james168ma.Simpleton
         private int currentIndex;
         private GameObject currentWeapon;
 
+        private bool isReloading;
+
         #endregion
 
         #region MonoBehaviour Callbacks
+
+        void Start()
+        {
+            foreach(Gun g in loadout) g.Initialize(); // initialize the guns
+            photonView.RPC("Equip", RpcTarget.AllBuffered, 0);
+        }
 
         void Update()
         {
@@ -43,8 +52,11 @@ namespace Com.james168ma.Simpleton
 
                 if(Input.GetMouseButtonDown(0) && currentCooldown <= 0) // left clicked
                 {
-                    photonView.RPC("Shoot", RpcTarget.All);
+                    if(loadout[currentIndex].FireBullet()) photonView.RPC("Shoot", RpcTarget.All);
+                    else StartCoroutine(Reload(loadout[currentIndex].reload));
                 }
+
+                if(Input.GetKeyDown(KeyCode.R)) StartCoroutine(Reload(loadout[currentIndex].reload)); // reload with R
             }
         }
 
@@ -53,7 +65,7 @@ namespace Com.james168ma.Simpleton
             if(!photonView.IsMine) return;
 
             // cooldown for shooting
-            if(currentCooldown > 0) 
+            if(currentWeapon != null && currentCooldown > 0) 
             {
                 currentCooldown -= Time.deltaTime;
             }
@@ -63,11 +75,24 @@ namespace Com.james168ma.Simpleton
 
         #region Private Methods
 
+        IEnumerator Reload(float p_wait)
+        {
+            isReloading = true;
+            currentWeapon.SetActive(false);
+
+            yield return new WaitForSeconds(p_wait);
+
+            loadout[currentIndex].Reload();
+            currentWeapon.SetActive(true);
+            isReloading = false;
+        }
+
         [PunRPC] // make Equip an RPC (Remote Procedure Call)
         void Equip(int p_ind)
         {
             if(currentWeapon != null)
             {
+                if(isReloading) StopCoroutine("Reload");
                 Destroy(currentWeapon);
             }
 
@@ -143,6 +168,19 @@ namespace Com.james168ma.Simpleton
         private void TakeDamage (int p_damage)
         {
             GetComponent<Player>().TakeDamage(p_damage);
+        }
+
+        #endregion
+
+
+        #region Public Methods
+
+        public void RefreshAmmo (Text p_text)
+        {
+            int t_clip = loadout[currentIndex].GetClip();
+            int t_stash = loadout[currentIndex].GetStash();
+
+            p_text.text = t_clip.ToString("D2") + " / " + t_stash.ToString("D2");
         }
 
         #endregion
